@@ -20,8 +20,14 @@ package org.apache.tinkerpop.gremlin.process.traversal.step.branch
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__
 import org.apache.tinkerpop.gremlin.process.traversal.util.ScriptTraversal
+import org.apache.tinkerpop.gremlin.structure.Edge
+import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Vertex
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select
 
 /**
  * @author Pieter Martin
@@ -54,6 +60,12 @@ public abstract class GroovyOptionalTest {
         public Traversal<Vertex, String> get_g_VX1X_optionalXaddVXdogXX_label(Object v1Id) {
             new ScriptTraversal<>(g, "gremlin-groovy", "g.V(v1Id).optional(addV('dog')).label", "v1Id", v1Id)
         }
-    }
 
+        @Override
+        public Traversal<Vertex, Map<String, Element>> get_g_VX1_2X_asXaX_optionalXbothE_dedup_asXbXX_chooseXselectXbX_selectXa_bX_projectXaX_byXselectXaXXX(Object v1Id, Object v2Id) {
+            new ScriptTraversal<>(g, "gremlin-groovy",
+                    "g.V(v1Id,v2Id).as('a').optional(bothE.dedup.as('b')).choose(select('b'), select('a', 'b'), project('a').by(select('a')))",
+                    "v1Id", v1Id, "v2Id", v2Id)
+        }
+    }
 }

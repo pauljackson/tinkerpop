@@ -24,6 +24,10 @@ import org.apache.tinkerpop.gremlin.process.AbstractGremlinProcessTest;
 import org.apache.tinkerpop.gremlin.process.GremlinProcessRunner;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
@@ -32,13 +36,16 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.addV;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.bothE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -57,6 +64,8 @@ public abstract class OptionalTest extends AbstractGremlinProcessTest {
     public abstract Traversal<Vertex, Path> get_g_V_optionalXout_optionalXoutXX_path();
 
     public abstract Traversal<Vertex, String> get_g_VX1X_optionalXaddVXdogXX_label(Object v1Id);
+
+    public abstract Traversal<Vertex, Map<String, Element>> get_g_VX1_2X_asXaX_optionalXbothE_dedup_asXbXX_chooseXselectXbX_selectXa_bX_projectXaX_byXselectXaXXX(Object v1Id, Object v2Id);
 
     @Test
     @LoadGraphWith(MODERN)
@@ -136,6 +145,33 @@ public abstract class OptionalTest extends AbstractGremlinProcessTest {
         assertEquals(7L, g.V().count().next().longValue());
     }
 
+    @Test
+    @LoadGraphWith(MODERN)
+    public void g_VX1_2X_asXaX_optionalXbothE_dedup_asXbXX_chooseXselectXbX_selectXa_bX_projectXaX_byXselectXaXXX() {
+        final Vertex marko = convertToVertex(this.graph, "marko");
+        final Vertex vadas = convertToVertex(this.graph, "vadas");
+        final Traversal<Vertex, Map<String, Element>> traversal = get_g_VX1_2X_asXaX_optionalXbothE_dedup_asXbXX_chooseXselectXbX_selectXa_bX_projectXaX_byXselectXaXXX(marko, vadas);
+        printTraversalForm(traversal);
+        int a = 0, b = 0;
+        int expectedA = 4, expectedB = 3;
+        while (traversal.hasNext()) {
+            final Map<String, Element> m = traversal.next();
+            if (m.containsKey("a")) {
+                a++;
+                assertTrue(m.get("a").equals(marko) || m.get("a").equals(vadas));
+            }
+            if (m.containsKey("b")) {
+                b++;
+                assertTrue(m.get("b") instanceof Edge);
+                final Edge edge = (Edge) m.get("b");
+                assertTrue(edge.outVertex().equals(marko) || edge.outVertex().equals(vadas));
+                if (edge.outVertex().equals(vadas)) expectedA = 3;
+            }
+        }
+        assertEquals(expectedA, a);
+        assertEquals(expectedB, b);
+    }
+
     public static class Traversals extends OptionalTest {
 
         @Override
@@ -161,6 +197,14 @@ public abstract class OptionalTest extends AbstractGremlinProcessTest {
         @Override
         public Traversal<Vertex, String> get_g_VX1X_optionalXaddVXdogXX_label(Object v1Id) {
             return g.V(v1Id).optional(addV("dog")).label();
+        }
+
+        @Override
+        public Traversal<Vertex, Map<String, Element>> get_g_VX1_2X_asXaX_optionalXbothE_dedup_asXbXX_chooseXselectXbX_selectXa_bX_projectXaX_byXselectXaXXX(Object v1Id, Object v2Id) {
+            return g.V(v1Id, v2Id).as("a").optional(bothE().dedup().as("b"))
+                    .choose(__.select("b"),
+                            __.<Edge, Element>select("a", "b"),
+                            __.<Edge, Element>project("a").by(select("a")));
         }
     }
 }
