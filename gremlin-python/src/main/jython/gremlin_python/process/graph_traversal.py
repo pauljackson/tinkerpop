@@ -21,7 +21,7 @@ from .traversal import Traversal
 from .traversal import TraversalStrategies
 from .strategies import VertexProgramStrategy
 from .traversal import Bytecode
-from ..driver.remote_connection import RemoteStrategy
+from gremlin_python.driver.remote.remote_connection import RemoteStrategy
 from .. import statics
 from ..statics import long
 
@@ -1146,6 +1146,3 @@ def where(*args):
       return __.where(*args)
 
 statics.add_static('where', where)
-
-
-

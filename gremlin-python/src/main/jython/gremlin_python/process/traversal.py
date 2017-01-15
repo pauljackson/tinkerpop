@@ -26,9 +26,11 @@ class Traversal(object):
         self.graph = graph
         self.traversal_strategies = traversal_strategies
         self.bytecode = bytecode
-        self.side_effects = TraversalSideEffects()
+        self._side_effects = TraversalSideEffects()
         self.traversers = None
         self.last_traverser = None
+        # This is mainly to deal with futures for promise method
+        self.remote_results = None
     def __repr__(self):
         return str(self.bytecode)
     def __eq__(self, other):
@@ -79,15 +81,16 @@ class Traversal(object):
             return tempList
     def promise(self, cb=None):
         self.traversal_strategies.apply_async_strategies(self)
-        future_traversers = self.traversers
-        future = type(future_traversers)()
+        future_traversal = self.remote_results
+        future = type(future_traversal)()
         def process(f):
             try:
-                traversers = f.result()
+                traversal = f.result()
             except Exception as e:
                 future.set_exception(e)
             else:
-                self.traversers = iter(traversers)
+                self.traversers = iter(traversal.traversers)
+                self.side_effects = traversal.side_effects
                 if cb:
                     try:
                         result = cb(self)
@@ -97,7 +100,7 @@ class Traversal(object):
                         future.set_result(result)
                 else:
                     future.set_result(self)
-        future_traversers.add_done_callback(process)
+        future_traversal.add_done_callback(process)
         return future
 
 
@@ -407,4 +410,3 @@ class Binding(object):
         return hash(self.key) + hash(self.value)
     def __repr__(self):
         return "binding[" + self.key + "=" + str(self.value) + "]"
-
