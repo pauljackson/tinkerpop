@@ -36,10 +36,7 @@ except ImportError:
 
 
 class Client:
-    """
-    This class provides the main interface and should be passed to
-    traversal objects using withRemote.
-    """
+
     def __init__(self, url, traversal_source, protocol_factory=None,
                  transport_factory=None, pool_size=None, max_workers=None,
                  username="", password=""):
