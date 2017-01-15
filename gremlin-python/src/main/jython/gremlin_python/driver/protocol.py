@@ -67,7 +67,7 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
         if status_code == 407:
             self._authenticate(request_id)
             data = self._transport.read()
-            self.receive(data, response_queues)
+            self.data_received(data, results_dict)
         elif status_code == 204:
             # result_set.stream.put_nowait([None])
             result_set.done.set_result(None)
@@ -80,7 +80,7 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
             result_set.stream.put_nowait(results)
             if status_code == 206:
                 data = self._transport.read()
-                self.receive(data, response_queues)
+                self.data_received(data, results_dict)
             else:
                 result_set.done.set_result(None)
                 del results_dict[request_id]
