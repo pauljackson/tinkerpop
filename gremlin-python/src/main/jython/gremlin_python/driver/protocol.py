@@ -23,7 +23,7 @@ import uuid
 
 import six
 
-from gremlin_python.driver import serializer
+from gremlin_python.driver import serializer, request
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -65,11 +65,15 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
         aggregate_to = data['result']['meta'].get('aggregateTo', 'list')
         result_set._aggregate_to = aggregate_to
         if status_code == 407:
-            self._authenticate(request_id)
+            auth = b''.join([b'\x00', self.username.encode('utf-8'),
+                             b'\x00', self.password.encode('utf-8')])
+            request_message = request.RequestMessage(
+                'traversal', 'authentication',
+                {'sasl': base64.b64encode(auth).decode()})
+            self.write(request_id, request_message)
             data = self._transport.read()
             self.data_received(data, results_dict)
         elif status_code == 204:
-            # result_set.stream.put_nowait([None])
             result_set.done.set_result(None)
             del results_dict[request_id]
         elif status_code in [200, 206]:
@@ -89,12 +93,3 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
                 "{0}: {1}".format(status_code, data["status"]["message"])))
             result_set.done.set_result(None)
             del results_dict[request_id]
-
-    def _authenticate(self, request_id):
-        auth = b''.join([b'\x00', self.username.encode('utf-8'),
-                         b'\x00', self.password.encode('utf-8')])
-        args = {'sasl': base64.b64encode(auth).decode(),
-                'saslMechanism': 'PLAIN'}
-        message = self._message_serializer.serialize_message(
-            request_id, '', 'authentication', **args)
-        self._transport.write(message)
