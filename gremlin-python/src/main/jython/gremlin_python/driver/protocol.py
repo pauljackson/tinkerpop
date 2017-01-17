@@ -17,6 +17,7 @@ specific language governing permissions and limitations
 under the License.
 """
 import abc
+import base64
 import collections
 import json
 import uuid
@@ -44,10 +45,12 @@ class AbstractBaseProtocol:
 
 class GremlinServerWSProtocol(AbstractBaseProtocol):
 
-    def __init__(self, message_serializer=None):
+    def __init__(self, message_serializer=None, username='', password=''):
         if message_serializer is None:
             message_serializer = serializer.GraphSON2MessageSerializer()
         self._message_serializer = message_serializer
+        self._username = username
+        self._password = password
 
     def connection_made(self, transport):
         super(GremlinServerWSProtocol, self).connection_made(transport)
@@ -65,8 +68,8 @@ class GremlinServerWSProtocol(AbstractBaseProtocol):
         aggregate_to = data['result']['meta'].get('aggregateTo', 'list')
         result_set._aggregate_to = aggregate_to
         if status_code == 407:
-            auth = b''.join([b'\x00', self.username.encode('utf-8'),
-                             b'\x00', self.password.encode('utf-8')])
+            auth = b''.join([b'\x00', self._username.encode('utf-8'),
+                             b'\x00', self._password.encode('utf-8')])
             request_message = request.RequestMessage(
                 'traversal', 'authentication',
                 {'sasl': base64.b64encode(auth).decode()})

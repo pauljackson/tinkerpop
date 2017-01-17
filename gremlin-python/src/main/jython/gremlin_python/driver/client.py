@@ -39,9 +39,10 @@ class Client:
 
     def __init__(self, url, traversal_source, protocol_factory=None,
                  transport_factory=None, pool_size=None, max_workers=None,
-                 username="", password=""):
+                 message_serializer=None, username="", password=""):
         self._url = url
         self._traversal_source = traversal_source
+        self._message_serializer = message_serializer
         self._username = username
         self._password = password
         if transport_factory is None:
@@ -55,7 +56,10 @@ class Client:
                 transport_factory = lambda: TornadoTransport()
         self._transport_factory = transport_factory
         if protocol_factory is None:
-            protocol_factory = lambda: protocol.GremlinServerWSProtocol()
+            protocol_factory = lambda: protocol.GremlinServerWSProtocol(
+                message_serializer=self._message_serializer,
+                username=self._username,
+                password=self._password)
         self._protocol_factory = protocol_factory
         if pool_size is None:
             pool_size = 4
@@ -93,8 +97,7 @@ class Client:
         protocol = self._protocol_factory()
         return connection.Connection(
             self._url, self._traversal_source, protocol,
-            self._transport_factory, self._executor, self._pool,
-            self._username, self._password)
+            self._transport_factory, self._executor, self._pool)
 
     def submit(self, message):
         return self.submitAsync(message).result()

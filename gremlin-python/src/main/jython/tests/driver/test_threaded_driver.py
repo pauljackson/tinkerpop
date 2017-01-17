@@ -18,11 +18,11 @@ from gremlin_python.structure.graph import Graph
 
 
 def test_connection():
-    protocol = GremlinServerWSProtocol()
+    protocol = GremlinServerWSProtocol(username='stephen', password='password')
     executor = concurrent.futures.ThreadPoolExecutor(5)
     pool = queue.Queue()
     conn = Connection('ws://localhost:8182/gremlin', 'g', protocol,
-                      lambda: TornadoTransport(), executor, pool, '', '')
+                      lambda: TornadoTransport(), executor, pool)
     g = Graph().traversal()
     t = g.V()
     message = RequestMessage('traversal', 'bytecode', {'gremlin': t.bytecode})

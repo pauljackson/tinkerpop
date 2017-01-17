@@ -26,7 +26,7 @@ from gremlin_python.driver import resultset
 class Connection:
 
     def __init__(self, url, traversal_source, protocol, transport_factory,
-                 executor, pool, username, password):
+                 executor, pool):
         self._url = url
         self._traversal_source = traversal_source
         self._protocol = protocol
@@ -34,8 +34,6 @@ class Connection:
         self._executor = executor
         self._transport = None
         self._pool = pool
-        self._username = username
-        self._password = password
         self._results = {}
         self.connect()
 
